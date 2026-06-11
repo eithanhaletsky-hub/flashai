@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask_login import login_required, current_user
 from app import db
 from app.models import Deck, Card, CardReview
 from app.services.ai_service import generate_flashcards
@@ -7,6 +8,7 @@ cards_bp = Blueprint("cards", __name__)
 
 
 @cards_bp.route("/generate", methods=["GET", "POST"])
+@login_required
 def generate():
     if request.method == "POST":
         topic = request.form.get("topic", "").strip()
@@ -26,7 +28,7 @@ def generate():
             flash(f"AI generation failed: {e}", "error")
             return render_template("generate.html")
 
-        deck = Deck(name=deck_name, description=f"Generated from: {topic}")
+        deck = Deck(name=deck_name, description=f"Generated from: {topic}", user_id=current_user.id)
         db.session.add(deck)
         db.session.flush()
 
@@ -45,23 +47,34 @@ def generate():
 
 
 @cards_bp.route("/deck/<int:deck_id>")
+@login_required
 def deck_view(deck_id):
     deck = Deck.query.get_or_404(deck_id)
+    if deck.user_id != current_user.id:
+        flash("Access denied.", "error")
+        return redirect(url_for("main.landing"))
     return render_template("deck.html", deck=deck)
 
 
 @cards_bp.route("/deck/<int:deck_id>/delete", methods=["POST"])
+@login_required
 def deck_delete(deck_id):
     deck = Deck.query.get_or_404(deck_id)
+    if deck.user_id != current_user.id:
+        flash("Access denied.", "error")
+        return redirect(url_for("main.landing"))
     db.session.delete(deck)
     db.session.commit()
     flash("Deck deleted.", "info")
-    return redirect(url_for("main.index"))
+    return redirect(url_for("main.landing"))
 
 
 @cards_bp.route("/card/<int:card_id>/edit", methods=["POST"])
+@login_required
 def card_edit(card_id):
     card = Card.query.get_or_404(card_id)
+    if card.deck.user_id != current_user.id:
+        return jsonify({"error": "Access denied"}), 403
     data = request.get_json()
     if "front" in data:
         card.front = data["front"]
@@ -72,8 +85,11 @@ def card_edit(card_id):
 
 
 @cards_bp.route("/card/<int:card_id>/delete", methods=["POST"])
+@login_required
 def card_delete(card_id):
     card = Card.query.get_or_404(card_id)
+    if card.deck.user_id != current_user.id:
+        return jsonify({"error": "Access denied"}), 403
     deck_id = card.deck_id
     db.session.delete(card)
     db.session.commit()

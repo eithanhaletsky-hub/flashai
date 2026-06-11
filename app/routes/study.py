@@ -1,5 +1,6 @@
 import random
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
+from flask_login import login_required, current_user
 from app.models import Deck, Card, CardReview
 from app.services.spaced_repetition import review_card, get_due_cards
 
@@ -7,8 +8,12 @@ study_bp = Blueprint("study", __name__)
 
 
 @study_bp.route("/deck/<int:deck_id>")
+@login_required
 def study_menu(deck_id):
     deck = Deck.query.get_or_404(deck_id)
+    if deck.user_id != current_user.id:
+        flash("Access denied.", "error")
+        return redirect(url_for("main.landing"))
     due_cards = get_due_cards(deck)
     return render_template("study_menu.html", deck=deck, due_count=len(due_cards))
 
