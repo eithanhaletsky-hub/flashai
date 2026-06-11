@@ -1,0 +1,29 @@
+body {
+    font-family: 'Rubik', sans-serif;
+}
+
+.flashcard-container {
+    perspective: 1000px;
+}
+
+.flashcard-container:hover .bg-white {
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+}
+
+[contenteditable="true"] {
+    outline: none;
+    padding: 4px 8px;
+}
+
+[contenteditable="true"]:focus {
+    background-color: #f8fafc;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.grid > div, .space-y-4 > div {
+    animation: fadeIn 0.3s ease-out;
+}

@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Match - {{ deck.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">Match</h1>
+        <a href="{{ url_for('study.study_menu', deck_id=deck.id) }}" class="text-gray-500 hover:text-gray-700 transition">Back to Modes</a>
+    </div>
+
+    <div class="flex items-center justify-between mb-6">
+        <p class="text-gray-500">Click a term, then click its matching definition</p>
+        <div class="text-lg font-medium text-gray-700">Time: <span id="timer">0:00</span></div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-6" id="match-board">
+        <div class="space-y-3" id="terms-col"></div>
+        <div class="space-y-3" id="defs-col"></div>
+    </div>
+
+    <div id="match-complete" class="hidden text-center py-16">
+        <div class="text-6xl mb-4">&#x1F389;</div>
+        <h2 class="text-3xl font-bold text-gray-800 mb-2">All Matched!</h2>
+        <p class="text-xl text-gray-600 mb-1">Time: <span id="final-time" class="font-bold text-indigo-600"></span></p>
+        <p class="text-gray-500 mb-8">Can you beat your time?</p>
+        <div class="flex gap-4 justify-center">
+            <a href="{{ url_for('study.study_match', deck_id=deck.id) }}" class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition">Play Again</a>
+            <a href="{{ url_for('study.study_menu', deck_id=deck.id) }}" class="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition">Other Modes</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const pairs = {{ pairs|tojson }};
+let selected = null;
+let matched = 0;
+let seconds = 0;
+let timerInterval = null;
+
+function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
+function startTimer() {
+    timerInterval = setInterval(() => {
+        seconds++;
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        document.getElementById('timer').textContent = `${m}:${s.toString().padStart(2, '0')}`;
+    }, 1000);
+}
+
+function buildBoard() {
+    const termsCol = document.getElementById('terms-col');
+    const defsCol = document.getElementById('defs-col');
+
+    const terms = shuffle([...pairs]);
+    const defs = shuffle([...pairs]);
+
+    terms.forEach(p => {
+        const btn = document.createElement('button');
+        btn.className = 'match-term w-full p-4 rounded-xl border-2 border-gray-200 bg-white hover:border-indigo-400 transition text-right';
+        btn.textContent = p.front;
+        btn.dataset.id = p.id;
+        btn.dataset.type = 'term';
+        btn.onclick = () => handleClick(btn);
+        termsCol.appendChild(btn);
+    });
+
+    defs.forEach(p => {
+        const btn = document.createElement('button');
+        btn.className = 'match-def w-full p-4 rounded-xl border-2 border-gray-200 bg-white hover:border-indigo-400 transition text-right';
+        btn.textContent = p.back;
+        btn.dataset.id = p.id;
+        btn.dataset.type = 'def';
+        btn.onclick = () => handleClick(btn);
+        defsCol.appendChild(btn);
+    });
+
+    startTimer();
+}
+
+function handleClick(btn) {
+    if (btn.classList.contains('opacity-40')) return;
+
+    if (!selected) {
+        selected = btn;
+        btn.classList.add('border-indigo-500', 'bg-indigo-50');
+        btn.classList.remove('border-gray-200');
+    } else if (selected === btn) {
+        selected.classList.remove('border-indigo-500', 'bg-indigo-50');
+        selected.classList.add('border-gray-200');
+        selected = null;
+    } else if (selected.dataset.type === btn.dataset.type) {
+        selected.classList.remove('border-indigo-500', 'bg-indigo-50');
+        selected.classList.add('border-gray-200');
+        selected = btn;
+        btn.classList.add('border-indigo-500', 'bg-indigo-50');
+        btn.classList.remove('border-gray-200');
+    } else {
+        if (selected.dataset.id === btn.dataset.id) {
+            selected.classList.remove('border-indigo-500', 'bg-indigo-50');
+            selected.classList.add('border-green-500', 'bg-green-50', 'opacity-40');
+            btn.classList.add('border-green-500', 'bg-green-50', 'opacity-40');
+            btn.classList.remove('border-gray-200');
+            selected.onclick = null;
+            btn.onclick = null;
+            matched++;
+            selected = null;
+
+            if (matched === pairs.length) {
+                clearInterval(timerInterval);
+                setTimeout(() => {
+                    document.getElementById('match-board').classList.add('hidden');
+                    document.getElementById('match-complete').classList.remove('hidden');
+                    const m = Math.floor(seconds / 60);
+                    const s = seconds % 60;
+                    document.getElementById('final-time').textContent = `${m}:${s.toString().padStart(2, '0')}`;
+                }, 500);
+            }
+        } else {
+            selected.classList.remove('border-indigo-500', 'bg-indigo-50');
+            selected.classList.add('border-red-500', 'bg-red-50');
+            btn.classList.add('border-red-500', 'bg-red-50');
+            btn.classList.remove('border-gray-200');
+            const oldSelected = selected;
+            selected = null;
+            setTimeout(() => {
+                oldSelected.classList.remove('border-red-500', 'bg-red-50');
+                oldSelected.classList.add('border-gray-200');
+                btn.classList.remove('border-red-500', 'bg-red-50');
+                btn.classList.add('border-gray-200');
+            }, 600);
+        }
+    }
+}
+
+buildBoard();
+</script>
+{% endblock %}

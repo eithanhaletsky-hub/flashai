@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Write - {{ deck.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">Write Mode</h1>
+        <a href="{{ url_for('study.study_menu', deck_id=deck.id) }}" class="text-gray-500 hover:text-gray-700 transition">Back to Modes</a>
+    </div>
+
+    <div id="write-area">
+        <div class="text-center text-gray-500 mb-4">
+            <span id="progress-text">Card 1 of {{ cards|length }}</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2 mb-6">
+            <div id="progress-bar" class="bg-indigo-600 h-2 rounded-full transition-all" style="width: 0%"></div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 mb-6">
+            <span class="text-xs font-medium text-gray-400 uppercase tracking-wide">Term</span>
+            <p id="term-text" class="text-2xl text-gray-800 mt-2 leading-relaxed"></p>
+        </div>
+
+        <div class="space-y-4">
+            <input type="text" id="answer-input" placeholder="Type your answer..."
+                   class="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-lg"
+                   autocomplete="off">
+            <div id="feedback" class="hidden rounded-xl p-4"></div>
+            <div class="flex gap-3">
+                <button id="check-btn" onclick="checkAnswer()" class="flex-1 bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition font-medium">
+                    Check
+                </button>
+                <button id="skip-btn" onclick="showCorrectAnswer()" class="bg-gray-100 text-gray-600 px-6 py-3 rounded-lg hover:bg-gray-200 transition">
+                    Don't know
+                </button>
+                <button id="next-btn" onclick="nextCard()" class="hidden flex-1 bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition font-medium">
+                    Next
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="write-complete" class="hidden text-center py-16">
+        <div class="text-6xl mb-4">&#x1F4DD;</div>
+        <h2 class="text-3xl font-bold text-gray-800 mb-2">Done!</h2>
+        <p class="text-xl text-gray-600 mb-1">Score: <span id="final-score" class="font-bold text-indigo-600"></span></p>
+        <p class="text-gray-500 mb-8" id="score-msg"></p>
+        <div class="flex gap-4 justify-center">
+            <a href="{{ url_for('study.study_write', deck_id=deck.id) }}" class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition">Try Again</a>
+            <a href="{{ url_for('study.study_menu', deck_id=deck.id) }}" class="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition">Other Modes</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const cards = {{ cards|tojson }};
+let current = 0;
+let score = 0;
+let checked = false;
+
+function normalize(str) {
+    return str.trim().toLowerCase().replace(/[‏‎‪-‮]/g, '').replace(/\s+/g, ' ');
+}
+
+function showCard() {
+    if (current >= cards.length) {
+        document.getElementById('write-area').classList.add('hidden');
+        document.getElementById('write-complete').classList.remove('hidden');
+        const pct = Math.round((score / cards.length) * 100);
+        document.getElementById('final-score').textContent = `${score}/${cards.length} (${pct}%)`;
+        const msg = pct === 100 ? 'Perfect memory!' : pct >= 80 ? 'Excellent recall!' : pct >= 60 ? 'Good effort!' : 'Keep practicing!';
+        document.getElementById('score-msg').textContent = msg;
+        return;
+    }
+    checked = false;
+    document.getElementById('term-text').textContent = cards[current].front;
+    document.getElementById('answer-input').value = '';
+    document.getElementById('answer-input').disabled = false;
+    document.getElementById('answer-input').focus();
+    document.getElementById('feedback').classList.add('hidden');
+    document.getElementById('check-btn').classList.remove('hidden');
+    document.getElementById('skip-btn').classList.remove('hidden');
+    document.getElementById('next-btn').classList.add('hidden');
+    document.getElementById('progress-text').textContent = `Card ${current + 1} of ${cards.length}`;
+    document.getElementById('progress-bar').style.width = `${((current + 1) / cards.length) * 100}%`;
+}
+
+function checkAnswer() {
+    if (checked) return;
+    checked = true;
+    const input = document.getElementById('answer-input').value;
+    const correct = cards[current].back;
+    const isCorrect = normalize(input) === normalize(correct);
+    const feedback = document.getElementById('feedback');
+    feedback.classList.remove('hidden', 'bg-green-50', 'text-green-700', 'bg-red-50', 'text-red-700');
+
+    if (isCorrect) {
+        score++;
+        feedback.classList.add('bg-green-50', 'text-green-700');
+        feedback.innerHTML = '<strong>Correct!</strong>';
+    } else {
+        feedback.classList.add('bg-red-50', 'text-red-700');
+        feedback.innerHTML = `<strong>Incorrect.</strong> The answer is: <span class="font-semibold">${correct}</span>`;
+    }
+
+    document.getElementById('answer-input').disabled = true;
+    document.getElementById('check-btn').classList.add('hidden');
+    document.getElementById('skip-btn').classList.add('hidden');
+    document.getElementById('next-btn').classList.remove('hidden');
+}
+
+function showCorrectAnswer() {
+    if (checked) return;
+    checked = true;
+    const correct = cards[current].back;
+    const feedback = document.getElementById('feedback');
+    feedback.classList.remove('hidden', 'bg-green-50', 'text-green-700', 'bg-red-50', 'text-red-700');
+    feedback.classList.add('bg-yellow-50', 'text-yellow-700');
+    feedback.innerHTML = `The answer is: <span class="font-semibold">${correct}</span>`;
+    document.getElementById('answer-input').disabled = true;
+    document.getElementById('check-btn').classList.add('hidden');
+    document.getElementById('skip-btn').classList.add('hidden');
+    document.getElementById('next-btn').classList.remove('hidden');
+}
+
+function nextCard() {
+    current++;
+    showCard();
+}
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        if (!checked) checkAnswer();
+        else nextCard();
+    }
+});
+
+showCard();
+</script>
+{% endblock %}
