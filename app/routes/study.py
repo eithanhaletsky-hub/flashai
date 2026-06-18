@@ -3,8 +3,14 @@ from flask import Blueprint, render_template, request, jsonify, redirect, url_fo
 from flask_login import login_required, current_user
 from app.models import Deck, Card, CardReview
 from app.services.spaced_repetition import review_card, get_due_cards
+from app.translations import get_translations
+from app import get_lang
 
 study_bp = Blueprint("study", __name__)
+
+
+def t():
+    return get_translations(get_lang())
 
 
 @study_bp.route("/deck/<int:deck_id>")
@@ -12,7 +18,7 @@ study_bp = Blueprint("study", __name__)
 def study_menu(deck_id):
     deck = Deck.query.get_or_404(deck_id)
     if deck.user_id != current_user.id:
-        flash("Access denied.", "error")
+        flash(t()["flash_access_denied"], "error")
         return redirect(url_for("main.landing"))
     due_cards = get_due_cards(deck)
     return render_template("study_menu.html", deck=deck, due_count=len(due_cards))

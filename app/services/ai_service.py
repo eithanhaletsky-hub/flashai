@@ -3,10 +3,10 @@ from google import genai
 from flask import current_app
 
 MODELS_TO_TRY = [
+    "gemini-3.5-flash",
     "gemini-2.5-flash",
     "gemini-2.5-flash-lite",
-    "gemini-2.0-flash",
-    "gemini-2.0-flash-lite",
+    "gemini-2.5-pro",
 ]
 
 

@@ -3,8 +3,14 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import Deck, Card, CardReview
 from app.services.ai_service import generate_flashcards
+from app.translations import get_translations
+from app import get_lang
 
 cards_bp = Blueprint("cards", __name__)
+
+
+def t():
+    return get_translations(get_lang())
 
 
 @cards_bp.route("/generate", methods=["GET", "POST"])
@@ -17,7 +23,7 @@ def generate():
         language = request.form.get("language", "he")
 
         if not topic:
-            flash("Please enter a topic.", "error")
+            flash(t()["flash_enter_topic"], "error")
             return render_template("generate.html")
 
         num_cards = max(3, min(num_cards, 30))
@@ -25,7 +31,7 @@ def generate():
         try:
             cards_data = generate_flashcards(topic, num_cards, language)
         except Exception as e:
-            flash(f"AI generation failed: {e}", "error")
+            flash(t()["flash_ai_failed"].format(error=e), "error")
             return render_template("generate.html")
 
         deck = Deck(name=deck_name, description=f"Generated from: {topic}", user_id=current_user.id)
@@ -40,7 +46,7 @@ def generate():
             db.session.add(review)
 
         db.session.commit()
-        flash(f"Created {len(cards_data)} flashcards!", "success")
+        flash(t()["flash_created"].format(count=len(cards_data)), "success")
         return redirect(url_for("cards.deck_view", deck_id=deck.id))
 
     return render_template("generate.html")
@@ -51,7 +57,7 @@ def generate():
 def deck_view(deck_id):
     deck = Deck.query.get_or_404(deck_id)
     if deck.user_id != current_user.id:
-        flash("Access denied.", "error")
+        flash(t()["flash_access_denied"], "error")
         return redirect(url_for("main.landing"))
     return render_template("deck.html", deck=deck)
 
@@ -61,11 +67,11 @@ def deck_view(deck_id):
 def deck_delete(deck_id):
     deck = Deck.query.get_or_404(deck_id)
     if deck.user_id != current_user.id:
-        flash("Access denied.", "error")
+        flash(t()["flash_access_denied"], "error")
         return redirect(url_for("main.landing"))
     db.session.delete(deck)
     db.session.commit()
-    flash("Deck deleted.", "info")
+    flash(t()["flash_deck_deleted"], "info")
     return redirect(url_for("main.landing"))
 
 

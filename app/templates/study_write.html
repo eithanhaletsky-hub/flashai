@@ -1,40 +1,40 @@
 {% extends "base.html" %}
-{% block title %}Write - {{ deck.name }}{% endblock %}
+{% block title %}{{ t.write_title }} - {{ deck.name }}{% endblock %}
 
 {% block content %}
 <div class="max-w-2xl mx-auto">
     <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">Write Mode</h1>
-        <a href="{{ url_for('study.study_menu', deck_id=deck.id) }}" class="text-gray-500 hover:text-gray-700 transition">Back to Modes</a>
+        <h1 class="text-2xl font-bold text-gray-800">{{ t.write_title }}</h1>
+        <a href="{{ url_for('study.study_menu', deck_id=deck.id) }}" class="text-gray-500 hover:text-gray-700 transition">{{ t.write_back_modes }}</a>
     </div>
 
     <div id="write-area">
         <div class="text-center text-gray-500 mb-4">
-            <span id="progress-text">Card 1 of {{ cards|length }}</span>
+            <span id="progress-text"></span>
         </div>
         <div class="w-full bg-gray-200 rounded-full h-2 mb-6">
             <div id="progress-bar" class="bg-indigo-600 h-2 rounded-full transition-all" style="width: 0%"></div>
         </div>
 
         <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 mb-6">
-            <span class="text-xs font-medium text-gray-400 uppercase tracking-wide">Term</span>
+            <span class="text-xs font-medium text-gray-400 uppercase tracking-wide">{{ t.write_term }}</span>
             <p id="term-text" class="text-2xl text-gray-800 mt-2 leading-relaxed"></p>
         </div>
 
         <div class="space-y-4">
-            <input type="text" id="answer-input" placeholder="Type your answer..."
+            <input type="text" id="answer-input" placeholder="{{ t.write_placeholder }}"
                    class="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-lg"
                    autocomplete="off">
             <div id="feedback" class="hidden rounded-xl p-4"></div>
             <div class="flex gap-3">
                 <button id="check-btn" onclick="checkAnswer()" class="flex-1 bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition font-medium">
-                    Check
+                    {{ t.write_check }}
                 </button>
                 <button id="skip-btn" onclick="showCorrectAnswer()" class="bg-gray-100 text-gray-600 px-6 py-3 rounded-lg hover:bg-gray-200 transition">
-                    Don't know
+                    {{ t.write_dont_know }}
                 </button>
                 <button id="next-btn" onclick="nextCard()" class="hidden flex-1 bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition font-medium">
-                    Next
+                    {{ t.write_next }}
                 </button>
             </div>
         </div>
@@ -42,12 +42,12 @@
 
     <div id="write-complete" class="hidden text-center py-16">
         <div class="text-6xl mb-4">&#x1F4DD;</div>
-        <h2 class="text-3xl font-bold text-gray-800 mb-2">Done!</h2>
-        <p class="text-xl text-gray-600 mb-1">Score: <span id="final-score" class="font-bold text-indigo-600"></span></p>
+        <h2 class="text-3xl font-bold text-gray-800 mb-2">{{ t.write_done }}</h2>
+        <p class="text-xl text-gray-600 mb-1">{{ t.write_score }} <span id="final-score" class="font-bold text-indigo-600"></span></p>
         <p class="text-gray-500 mb-8" id="score-msg"></p>
         <div class="flex gap-4 justify-center">
-            <a href="{{ url_for('study.study_write', deck_id=deck.id) }}" class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition">Try Again</a>
-            <a href="{{ url_for('study.study_menu', deck_id=deck.id) }}" class="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition">Other Modes</a>
+            <a href="{{ url_for('study.study_write', deck_id=deck.id) }}" class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition">{{ t.write_try_again }}</a>
+            <a href="{{ url_for('study.study_menu', deck_id=deck.id) }}" class="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition">{{ t.write_other_modes }}</a>
         </div>
     </div>
 </div>
@@ -56,6 +56,17 @@
 {% block scripts %}
 <script>
 const cards = {{ cards|tojson }};
+const TXT = {
+    card: {{ t.write_card|tojson }},
+    of: {{ t.write_of|tojson }},
+    correct: {{ t.write_correct|tojson }},
+    incorrect: {{ t.write_incorrect|tojson }},
+    answerIs: {{ t.write_answer_is|tojson }},
+    perfect: {{ t.write_perfect|tojson }},
+    excellent: {{ t.write_excellent|tojson }},
+    good: {{ t.write_good|tojson }},
+    keep: {{ t.write_keep|tojson }},
+};
 let current = 0;
 let score = 0;
 let checked = false;
@@ -70,7 +81,7 @@ function showCard() {
         document.getElementById('write-complete').classList.remove('hidden');
         const pct = Math.round((score / cards.length) * 100);
         document.getElementById('final-score').textContent = `${score}/${cards.length} (${pct}%)`;
-        const msg = pct === 100 ? 'Perfect memory!' : pct >= 80 ? 'Excellent recall!' : pct >= 60 ? 'Good effort!' : 'Keep practicing!';
+        const msg = pct === 100 ? TXT.perfect : pct >= 80 ? TXT.excellent : pct >= 60 ? TXT.good : TXT.keep;
         document.getElementById('score-msg').textContent = msg;
         return;
     }
@@ -83,7 +94,7 @@ function showCard() {
     document.getElementById('check-btn').classList.remove('hidden');
     document.getElementById('skip-btn').classList.remove('hidden');
     document.getElementById('next-btn').classList.add('hidden');
-    document.getElementById('progress-text').textContent = `Card ${current + 1} of ${cards.length}`;
+    document.getElementById('progress-text').textContent = `${TXT.card} ${current + 1} ${TXT.of} ${cards.length}`;
     document.getElementById('progress-bar').style.width = `${((current + 1) / cards.length) * 100}%`;
 }
 
@@ -99,10 +110,10 @@ function checkAnswer() {
     if (isCorrect) {
         score++;
         feedback.classList.add('bg-green-50', 'text-green-700');
-        feedback.innerHTML = '<strong>Correct!</strong>';
+        feedback.innerHTML = `<strong>${TXT.correct}</strong>`;
     } else {
         feedback.classList.add('bg-red-50', 'text-red-700');
-        feedback.innerHTML = `<strong>Incorrect.</strong> The answer is: <span class="font-semibold">${correct}</span>`;
+        feedback.innerHTML = `<strong>${TXT.incorrect}</strong> ${TXT.answerIs} <span class="font-semibold">${correct}</span>`;
     }
 
     document.getElementById('answer-input').disabled = true;
@@ -118,7 +129,7 @@ function showCorrectAnswer() {
     const feedback = document.getElementById('feedback');
     feedback.classList.remove('hidden', 'bg-green-50', 'text-green-700', 'bg-red-50', 'text-red-700');
     feedback.classList.add('bg-yellow-50', 'text-yellow-700');
-    feedback.innerHTML = `The answer is: <span class="font-semibold">${correct}</span>`;
+    feedback.innerHTML = `${TXT.answerIs} <span class="font-semibold">${correct}</span>`;
     document.getElementById('answer-input').disabled = true;
     document.getElementById('check-btn').classList.add('hidden');
     document.getElementById('skip-btn').classList.add('hidden');

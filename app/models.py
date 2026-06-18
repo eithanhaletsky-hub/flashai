@@ -11,6 +11,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_premium = db.Column(db.Boolean, default=False)
+    ui_lang = db.Column(db.String(5), default="he")
     decks = db.relationship("Deck", backref="owner", cascade="all, delete-orphan", lazy=True)
 
     def set_password(self, password):

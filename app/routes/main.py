@@ -1,6 +1,7 @@
-from flask import Blueprint, render_template, jsonify
+from flask import Blueprint, render_template, jsonify, session, redirect, request
 from flask_login import current_user, login_required
 from app.models import Deck
+from app import db
 
 main_bp = Blueprint("main", __name__)
 
@@ -21,3 +22,14 @@ def api_decks():
         {"id": d.id, "name": d.name, "card_count": d.card_count}
         for d in decks
     ])
+
+
+@main_bp.route("/set-language/<lang>")
+def set_language(lang):
+    if lang not in ("he", "en"):
+        lang = "he"
+    session["lang"] = lang
+    if current_user.is_authenticated:
+        current_user.ui_lang = lang
+        db.session.commit()
+    return redirect(request.referrer or "/")

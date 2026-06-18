@@ -1,11 +1,17 @@
-from flask import Flask
+from flask import Flask, session
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
+from flask_login import LoginManager, current_user
 from config import Config
 
 db = SQLAlchemy()
 login_manager = LoginManager()
 login_manager.login_view = "auth.login"
+
+
+def get_lang():
+    if current_user.is_authenticated and current_user.ui_lang:
+        return current_user.ui_lang
+    return session.get("lang", "he")
 
 
 def create_app():
@@ -19,6 +25,12 @@ def create_app():
     def load_user(user_id):
         from app.models import User
         return User.query.get(int(user_id))
+
+    @app.context_processor
+    def inject_translations():
+        from app.translations import get_translations
+        lang = get_lang()
+        return dict(t=get_translations(lang), lang=lang)
 
     from app.routes.main import main_bp
     from app.routes.auth import auth_bp
